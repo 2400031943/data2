@@ -1,24 +1,20 @@
-# Asset Manager — Production Deployment Guide
+# Complete Production Deployment Guide
 
-This document outlines the exact steps required to deploy the Asset Manager (including the new Machine Learning features) onto a new Windows PC for production use.
+Follow these exact steps on your **new PC** to deploy the application in a production environment using Waitress.
 
-## Prerequisites
+## Step 1: Install Prerequisites
+Before starting, ensure your new PC has the following installed:
+1. **Python 3.10+** (Make sure to check "Add Python to PATH" during installation)
+2. **Node.js (v18+)**
+3. **Git**
+4. **Microsoft ODBC Driver 17 for SQL Server** (Crucial for the database connection)
 
-Before pulling the code, ensure the following software is installed on the new PC:
-
-1. **Python 3.10+** (Ensure "Add Python to PATH" is checked during installation)
-2. **Node.js v18+** (For the frontend)
-3. **Git** (To clone the repository)
-4. **Microsoft SQL Server & ODBC Driver 17** (Since the backend connects to `dbo.assets`, `dbo.ACMS_list_2027`, etc.)
-
-> [!IMPORTANT]
-> Ensure your MS SQL Server is running and accessible before starting the backend, otherwise the database connection will fail.
+Ensure that your Microsoft SQL Server is running and accessible (or reachable over the network) so the backend can connect to `dbo.assets` and `dbo.ACMS_list_2027`.
 
 ---
 
-## 1. Get the Code
-Open Command Prompt or PowerShell and clone the repository:
-
+## Step 2: Download the Project
+Open a new **Command Prompt** or **PowerShell** and run:
 ```bash
 git clone https://github.com/2400031943/AssetManagement.git
 cd AssetManagement
@@ -26,12 +22,10 @@ cd AssetManagement
 
 ---
 
-## 2. Backend Setup (Flask + Waitress + ML)
+## Step 3: Deploy the Backend (using Waitress)
+The backend requires a virtual environment to isolate the dependencies.
 
-The repository has been updated so that the `requirements.txt` file automatically includes all the new Machine Learning libraries (`scikit-learn`, `joblib`) as well as the production WSGI server (`waitress`).
-
-Open a terminal inside the **`Backend`** folder and run:
-
+Open a terminal inside the **`Backend`** folder:
 ```bash
 # 1. Create a virtual environment
 python -m venv venv
@@ -39,52 +33,47 @@ python -m venv venv
 # 2. Activate the virtual environment
 venv\Scripts\activate
 
-# 3. Install all dependencies
+# 3. Install all dependencies (Flask, Waitress, scikit-learn, etc.)
 pip install -r requirements.txt
 ```
 
 > [!WARNING]
-> Don't forget to configure your Database Credentials! If you use a `.env` file or `config.py` locally for your SQL Server credentials, make sure to recreate that file on the new PC.
+> Ensure your database credentials in `config.py` (or `.env`) match the SQL Server on this new PC.
 
-### Starting the Backend in Production Mode
-Instead of running `python app.py` (which uses the slow development server), start your backend using the new script:
-
+**Start the Waitress Server:**
 ```bash
 python run_waitress.py
 ```
-If successful, you will see `Starting Waitress production server on port 5000...`
+*You should see a message indicating Waitress is running on port 5000.*
+
+> [!TIP]
+> **Running in the Background:** If you don't want to keep the terminal window open forever, you can install **NSSM** (nssm.cc). Run `nssm install AssetBackend` as Administrator, point it to `venv\Scripts\python.exe`, pass the argument `run_waitress.py`, and start it via Windows Services so it runs silently in the background on startup.
 
 ---
 
-## 3. Frontend Setup (React + Vite)
+## Step 4: Deploy the Frontend (Production Build)
+For a true production deployment, you shouldn't use `npm run dev`. Instead, you will "build" the application into optimized static files.
 
-Open a **new** terminal inside the **`Frontend`** folder:
-
+Open a **new terminal** inside the **`Frontend`** folder:
 ```bash
-# 1. Install Node modules
+# 1. Install Node dependencies
 npm install
 
-# 2. Start the development server
-npm run dev
+# 2. Build the optimized production bundle
+npm run build
 ```
+This command creates a `dist/` folder containing your highly optimized React application. 
 
-> [!NOTE]
-> If you want to serve the frontend purely in production mode as well, you can run `npm run build` and then serve the `dist/` folder using a static file server (like Nginx, IIS, or the `serve` npm package).
+**Serve the Frontend:**
+We will use a lightweight web server called `serve` to host these static files indefinitely:
+```bash
+npx serve -s dist -l 3000
+```
 
 ---
 
-## 4. (Optional) Run the Backend as a Background Service
-
-If you are deploying this on a server PC and want the Python backend to start automatically when the PC turns on (without needing to keep a terminal window open), use **NSSM**:
-
-1. Download **NSSM** (Non-Sucking Service Manager) from `nssm.cc` and extract it.
-2. Open an **Administrator** Command Prompt and run:
-   ```cmd
-   nssm.exe install AssetManagerBackend
-   ```
-3. A GUI window will pop up. Fill it out as follows:
-   * **Path:** Browse and select the `python.exe` located inside your `Backend\venv\Scripts\` folder.
-   * **Arguments:** `run_waitress.py`
-   * **Directory:** Browse and select your `Backend` folder.
-4. Click **Install Service**.
-5. Open the Windows **Services** app (`services.msc`), find `AssetManagerBackend`, and click **Start**. It will now run silently in the background forever!
+## Step 5: Test the Application
+Your entire stack is now deployed in production mode!
+1. Open your browser and go to `http://localhost:3000`.
+2. The frontend will automatically route API calls to the Waitress backend running on `http://localhost:5000`.
+3. Test logging in and check if the Machine Learning prediction and database fetches are working successfully.
