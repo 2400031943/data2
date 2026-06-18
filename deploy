@@ -1,0 +1,100 @@
+Deploying a Flask app with Waitress is a fantastic choice, especially for Windows, because it is a production-grade WSGI server (unlike the default Flask development server) and runs perfectly natively on Windows (unlike Gunicorn).
+
+Here is the step-by-step guide on how to set it up for your Asset Manager backend:
+
+Step 1: Install Waitress
+Open your terminal in the Backend folder (make sure your virtual environment is activated) and run:
+
+bash
+
+
+pip install waitress
+(You can also add waitress==3.0.0 to your requirements.txt file so you don't forget it on the other PC).
+
+Step 2: Create a Production Run Script
+The cleanest way to run Waitress is to create a small python script that starts your app.
+
+Create a new file in your Backend folder named run_waitress.py and paste this code into it:
+
+python
+
+
+from waitress import serve
+from app import app  # Imports the Flask 'app' object from your app.py file
+if __name__ == '__main__':
+    print("Starting Waitress production server on http://0.0.0.0:5000...")
+    # serve(app, host, port, threads)
+    serve(app, host='0.0.0.0', port=5000, threads=6)
+Note: threads=6 allows it to handle 6 requests simultaneously. You can increase this if you expect heavy traffic.
+
+Step 3: Run the Server
+Instead of running python app.py (which uses the slow development server), you will now start your backend by running:
+
+bash
+
+
+python run_waitress.py
+Your terminal will show Starting Waitress production server... and your Flask app is now running in production mode!
+
+Step 4 (Optional): Make it run in the background as a Windows Service
+If you are deploying this on a server PC and want it to start automatically when the PC turns on (even if nobody is logged in), the industry standard on Windows is to use a free tool called NSSM (Non-Sucking Service Manager).
+
+Download NSSM (from nssm.cc) and extract it.
+Open an Administrator Command Prompt and run: nssm.exe install AssetManagerBackend
+A GUI window will pop up:
+Path: Browse and select the python.exe located inside your Backend\venv\Scripts\ folder.
+Arguments: run_waitress.py
+Directory: Browse and select your Backend folder.
+Click "Install Service".
+Now you can open the Windows "Services" app (services.msc), find AssetManagerBackend, and set it to Start Automatically!
+9:48
+
+
+
+not on this pc i need to deploy on another one
+9:49
+
+
+Perfect. I have just prepared everything in the repository so you won't have to write any code on the new PC. I added the Waitress deployment script (run_waitress.py) and updated requirements.txt to automatically install Waitress alongside the ML libraries.
+
+Here is exactly what you need to do on the other PC:
+
+1. Pull the Latest Code
+Clone or pull the repository on the new PC so you get the latest files:
+
+bash
+
+
+git clone https://github.com/2400031943/AssetManagement.git
+cd AssetManagement
+2. Setup & Install
+Open a terminal in the Backend folder and run:
+
+bash
+
+
+# Create and activate your virtual environment
+python -m venv venv
+venv\Scripts\activate
+# Install all requirements (Flask, ML libraries, and Waitress!)
+pip install -r requirements.txt
+3. Start the Production Server
+Instead of using python app.py (which uses the slow development server), you will now start your backend with the new script I just created for you:
+
+bash
+
+
+python run_waitress.py
+You will see a message: Starting Waitress production server on port 5000...
+
+(Optional) Run it automatically in the background
+Since this is a production server, you probably don't want to keep a terminal window open forever. You can use a free tool called NSSM (Non-Sucking Service Manager) to make it run as a background Windows Service:
+
+Download NSSM from nssm.cc and extract it.
+Open an Administrator Command Prompt and run: nssm.exe install AssetManager
+A GUI window will pop up:
+Path: Browse and select the python.exe located inside your Backend\venv\Scripts\ folder.
+Arguments: run_waitress.py
+Directory: Browse and select your Backend folder.
+Click "Install Service".
+Open the Windows "Services" app (services.msc), find AssetManager, and click Start!
